@@ -1,0 +1,1 @@
+C:\Progetti\AzureProjects\IotFrontEnd\obj\Debug\iotfrontend.esproj.CoreCompileInputs.cache

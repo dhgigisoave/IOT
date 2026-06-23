@@ -1,0 +1,22 @@
+﻿{
+  "Header": {
+    "_": [
+      " This file for vsSolutionBuildEvent ",
+      " https://github.com/3F/vsSolutionBuildEvent "
+    ],
+    "Compatibility": "0.1"
+  },
+  "PreBuild": [
+    {
+      "Enabled": false,
+      "Name": "Act",
+      "Mode": {
+        "$type": "net.r_eg.vsSBE.Events.ModeScript, vsSolutionBuildEvent",
+        "Type": "Script",
+        "Command__": [
+          ""
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../IotFrontEnd/iotfrontend.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="BackendIotGigi.csproj" />
+</Solution>
