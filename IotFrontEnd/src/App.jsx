@@ -5,7 +5,7 @@ import './App.css'
 import { backend} from 'services/backend.js'
 
 function App() {
-    ChartJS.register(ArcElement, Tooltip, Legend); ù
+    ChartJS.register(ArcElement, Tooltip, Legend);
 	var data = backend.getDataFromCosmosDb()
     return (
         <>
