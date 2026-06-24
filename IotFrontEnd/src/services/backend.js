@@ -1,7 +1,7 @@
 export async function getDataFromCosmosDb() {
 	
 	//const url = 'http://localhost:7279/api/misure';
-	const url = 'http://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/misure';
+	const url = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/misure';
 	console.log(url);
 	return await fetch(url)
 		.then(res => {
