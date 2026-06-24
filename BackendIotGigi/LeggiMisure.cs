@@ -1,4 +1,6 @@
-﻿using Microsoft.Azure.Functions.Worker;
+﻿using BackendIotGigi.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,17 +19,19 @@ namespace BackendIotGigi
 		}
 
 		[Function("LeggiMisure")]
-		public IEnumerable<MisuraCosmos> Run(
+		public async Task<HttpResponseData> Run(
 			[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "misure")] HttpRequestData req,
 			[CosmosDBInput(
 			databaseName: "IoTDatabase",
 			containerName: "Misure",
 			Connection = "CosmosDBConnectionString",
 			SqlQuery = "SELECT TOP 100 * FROM c ORDER BY c.timestamp DESC")]
-		IEnumerable<MisuraCosmos> misure)
+		IEnumerable<MeasurementDocument> misure)
 		{
-			_logger.LogInformation("Lettura misure richiesta dal frontend");
-			return misure;
+			_logger.LogInformation("Lettura misure richiesta dal frontend"); 
+			var response = req.CreateResponse(System.Net.HttpStatusCode.OK);
+			await response.WriteAsJsonAsync(misure);
+			return response;
 		}
 	}
 }
