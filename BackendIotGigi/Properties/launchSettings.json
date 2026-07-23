@@ -2,7 +2,7 @@
   "profiles": {
     "BackendIotGigi": {
       "commandName": "Project",
-      "commandLineArgs": "--port 7279",
+      "commandLineArgs": "--port 6280",
       "launchBrowser": false
     }
   }

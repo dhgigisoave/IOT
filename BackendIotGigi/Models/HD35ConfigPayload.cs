@@ -25,10 +25,12 @@ namespace BackendIotGigi.Models
 		[JsonPropertyName("fw_release")]
 		public string FirmwareRelease { get; set; } = string.Empty;
 		[JsonPropertyName("network")]
-		public NetworkConfig Network { get; set; } = new ();
+		public NetworkConfig Network { get; set; } = new();
 		[JsonPropertyName("params")]
 		public ParamConfig[] Params { get; set; } = Array.Empty<ParamConfig>();
 
+		[JsonPropertyName("x509_thumbprint")]
+		public string X509Thumbprint { get; set; } = string.Empty;
 		#endregion Properties
 
 		#region Public Methods

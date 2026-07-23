@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using System.Configuration;
 using System.Net;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 
@@ -32,7 +33,6 @@ public class RegisterDevice
 	{
 		try
 		{
-
 			_logger.LogInformation("C# HTTP trigger function processed a request.");
 			string body;
 			using (var reader = new StreamReader(req.Body, Encoding.UTF8))
@@ -42,9 +42,11 @@ public class RegisterDevice
 
 			if (string.IsNullOrEmpty(body))
 				return new BadRequestObjectResult("Body vuoto. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
+
 			var config = JsonSerializer.Deserialize<HD35ConfigPayload>(body);
 			if (config is null || string.IsNullOrEmpty(config.Id))
 				return new BadRequestObjectResult("Invalid payload. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
+
 			var iotHubHostName = _config.GetValue<string>("IoTHubName") ?? string.Empty;
 			var connectionString = _config.GetValue<string>("IoTHubConnectionString2") ?? string.Empty;
 			if (string.IsNullOrEmpty(config.Id) || string.IsNullOrEmpty(iotHubHostName) || string.IsNullOrEmpty(connectionString))
@@ -54,25 +56,56 @@ public class RegisterDevice
 			}
 
 			var rm = RegistryManager.CreateFromConnectionString(connectionString);
+
+			// Genera certificato self-signed e ottieni thumbprint
+			using var cert = CreateSelfSignedCertificate(config.Id);
+			var thumbprint = cert.Thumbprint ?? string.Empty;
+
+			// Registra o aggiorna il device con X.509 thumbprint
 			var device = await rm.GetDeviceAsync(config.Id);
 			if (device == null)
 			{
-				device = await rm.AddDeviceAsync(new Device(config.Id));
+				device = new Device(config.Id)
+				{
+					Authentication = new AuthenticationMechanism
+					{
+						Type = AuthenticationType.SelfSigned,
+						X509Thumbprint = new X509Thumbprint { PrimaryThumbprint = thumbprint }
+					}
+				};
+				device = await rm.AddDeviceAsync(device);
 			}
+			else
+			{
+				device.Authentication = new AuthenticationMechanism
+				{
+					Type = AuthenticationType.SelfSigned,
+					X509Thumbprint = new X509Thumbprint { PrimaryThumbprint = thumbprint }
+				};
+				device = await rm.UpdateDeviceAsync(device);
+			}
+
 			if (device == null)
 			{
 				_logger.LogError($"Failed to register device: {config.Id}");
 				return new BadRequestObjectResult($"Failed to register device: {config.Id}");
 			}
-			var deviceKey = device?.Authentication?.SymmetricKey?.PrimaryKey;
-			if (string.IsNullOrEmpty(deviceKey))
-				return new ObjectResult("Impossibile ottenere la device key.") { StatusCode = 500 };
-			var sasToken = BuildDeviceSasToken(iotHubHostName, config.Id, deviceKey
-				, TimeSpan.FromDays(365), out long expiresOn);
 
+			// registra i sensori nel twin
 			await RegisterSensors(rm, config);
 
-			return new OkObjectResult(sasToken);
+			// Esporta il certificato PFX in base64 (il device lo userà per presentarsi)
+			var pfxBytes = cert.Export(X509ContentType.Pfx);
+			var pfxBase64 = Convert.ToBase64String(pfxBytes);
+
+			// Risposta: host, deviceId, thumbprint, e certificato PFX (base64)
+			return new OkObjectResult(new
+			{
+				iotHubHostName,
+				deviceId = config.Id,
+				x509Thumbprint = thumbprint,
+				certificatePfxBase64 = pfxBase64
+			});
 		}
 		catch (Exception ex)
 		{
@@ -148,5 +181,23 @@ public class RegisterDevice
 		var sr = WebUtility.UrlEncode(resourceUri).ToLowerInvariant();
 
 		return $"SharedAccessSignature sr={sr}&sig={signatureEscaped}&se={expiresOn}";
+	}
+
+	// Genera un certificato self-signed con chiave esportabile
+	private static X509Certificate2 CreateSelfSignedCertificate(string subjectName)
+	{
+		using var rsa = RSA.Create(2048);
+		var req = new CertificateRequest($"CN={subjectName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+		req.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
+		req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, false));
+		req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+
+		var notBefore = DateTimeOffset.UtcNow.AddMinutes(-5);
+		var notAfter = notBefore.AddYears(1);
+
+		using var cert = req.CreateSelfSigned(notBefore, notAfter);
+		// Re-import as PFX exportable to ensure private key è esportabile
+		var pfx = cert.Export(X509ContentType.Pfx);
+		return new X509Certificate2(pfx, (string?)null, X509KeyStorageFlags.Exportable);
 	}
 }
