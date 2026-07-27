@@ -1,5 +1,6 @@
 export async function setNewDevice(seriale) {
-	const url = 'http://localhost:6280/api/registerdevicepackaging';
+	//const url = 'http://localhost:6280/api/registerdevicepackaging';
+	const url = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/registerdevicepackaging';
 	console.log('POST', url, 'seriale=', seriale);
 
 	try {
