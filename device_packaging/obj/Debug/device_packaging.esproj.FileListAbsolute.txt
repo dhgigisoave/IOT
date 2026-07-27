@@ -1,0 +1,1 @@
+C:\Progetti\AzureProjects\device_packaging\obj\Debug\device_packaging.esproj.CoreCompileInputs.cache

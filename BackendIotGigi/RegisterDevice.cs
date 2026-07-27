@@ -114,6 +114,68 @@ public class RegisterDevice
 		}
 	}
 
+	[Function("RegisterDevicePackaging")]
+	public async Task<IActionResult> RegisterDevicePackaging([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post"
+		, Route = "registerdevicepackaging")] HttpRequest req)
+	{
+		try
+		{
+			_logger.LogInformation("C# HTTP trigger function processed a request.");
+			string body;
+			using (var reader = new StreamReader(req.Body, Encoding.UTF8))
+			{
+				body = (await reader.ReadToEndAsync())?.Trim() ?? string.Empty;
+			}
+
+			if (string.IsNullOrEmpty(body))
+				return new BadRequestObjectResult("Body vuoto. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
+
+			var payload = JsonSerializer.Deserialize<PackagingPayload>(body);
+			if (payload is null || string.IsNullOrEmpty(payload.SerialNumber))
+				return new BadRequestObjectResult("Invalid payload. Invia deviceId (JSON { \"serialnumber\": \"...\" } o solo testo).");
+
+			var iotHubHostName = _config.GetValue<string>("IoTHubName") ?? string.Empty;
+			var connectionString = _config.GetValue<string>("IoTHubConnectionString2") ?? string.Empty;
+			if (string.IsNullOrEmpty(payload.SerialNumber) || string.IsNullOrEmpty(iotHubHostName) || string.IsNullOrEmpty(connectionString))
+			{
+				_logger.LogError("Serial Number, IoT Hub Host Name, or Connection String is missing.");
+				return new BadRequestObjectResult("Serial Number, IoT Hub Host Name, or Connection String is missing.");
+			}
+
+			var rm = RegistryManager.CreateFromConnectionString(connectionString); 
+			var device = await rm.GetDeviceAsync(payload.SerialNumber);
+			if (device == null)
+			{
+				device = new Device(payload.SerialNumber);
+				device = await rm.AddDeviceAsync(device);
+			}
+			else
+			{
+				return new BadRequestObjectResult("Device already exists.");
+			}
+			if (device is not null)
+			{
+				var otp = await RegisterOTP(rm, payload.SerialNumber);
+				return new OkObjectResult(new
+				{
+					iotHubHostName,
+					deviceId = config.SerialNumber,
+					otp
+				});
+			}
+			else
+			{
+				_logger.LogError($"Failed to register device: {config.SerialNumber}");
+				return new BadRequestObjectResult($"Failed to register device: {config.SerialNumber}");
+			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "An error occurred while registering the device.");
+			return new ObjectResult("An error occurred while registering the device.") { StatusCode = 500 };
+		}
+	}
+
 	public static async Task<List<(string sensorId, string uniqueId)>> RegisterSensors(RegistryManager rm, HD35ConfigPayload config)
 	{
 		var twin = await rm.GetTwinAsync(config.Id);
@@ -162,6 +224,36 @@ public class RegisterDevice
 			}
 		}
 		return ret;
+	}
+	public static async Task<string> RegisterOTP(RegistryManager rm, string serialNumber)
+	{
+		var twin = await rm.GetTwinAsync(serialNumber);
+		var ret = GeneraOTP(serialNumber);
+		if (twin is not null)
+		{
+			twin.Tags["OTP"] = ret;
+
+			try
+			{
+				await rm.UpdateTwinAsync(serialNumber, twin, twin.ETag);
+			}
+			catch (Microsoft.Azure.Devices.Common.Exceptions.PreconditionFailedException)
+			{
+				// semplice retry: rileggi ed esegui di nuovo (o usa "*" per forzare)
+				twin = await rm.GetTwinAsync(serialNumber);
+				twin.Tags["OTP"] = ret;
+				await rm.UpdateTwinAsync(serialNumber, twin, twin.ETag);
+			}
+		}
+		return ret;
+	}
+
+	private static string GeneraOTP(string serialNumber)
+	{
+		// Genera un OTP basato su serialNumber e timestamp
+		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+		var otp = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{serialNumber}:{timestamp}"));
+		return otp;
 	}
 
 	private static string BuildDeviceSasToken(string iotHubHostName, string deviceId, string deviceKeyBase64, TimeSpan ttl, out long expiresOn)

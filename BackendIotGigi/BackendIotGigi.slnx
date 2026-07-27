@@ -1,4 +1,8 @@
 <Solution>
+  <Project Path="../device_packaging/device_packaging.esproj">
+    <Build />
+    <Deploy />
+  </Project>
   <Project Path="../IotFrontEnd/iotfrontend.esproj">
     <Build />
     <Deploy />

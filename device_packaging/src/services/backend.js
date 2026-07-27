@@ -1,0 +1,18 @@
+export async function setNewDevice(seriale) {
+
+	const url = `http://localhost:7279/api/registerdevicepackaging?seriale=${seriale}`;
+	//const url = `https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/registerdevicepackaging?seriale=${seriale}`;
+	console.log(url);
+	return await fetch(url)
+		.then(res => {
+			if (!res.ok) throw new Error('Network response was not ok');
+			let ret = null;
+			try {
+				ret = res.json();
+			} catch (e) {
+				console.error("Error parsing JSON:", e);
+			}
+			return ret;
+		});
+
+}
