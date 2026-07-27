@@ -29,11 +29,24 @@ public class RegisterDevice
 	}
 
 	[Function("RegisterDevice")]
-	public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "registerdevice")] HttpRequest req)
+	public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = "registerdevice")] HttpRequest req)
 	{
 		try
 		{
 			_logger.LogInformation("C# HTTP trigger function processed a request.");
+
+			// Aggiungi header CORS su tutte le risposte
+			var resp = req.HttpContext.Response;
+			resp.Headers["Access-Control-Allow-Origin"] = "*";
+			resp.Headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
+			resp.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+
+			// Rispondi subito alla preflight
+			if (req.Method == "OPTIONS")
+			{
+				return new OkResult();
+			}
+
 			string body;
 			using (var reader = new StreamReader(req.Body, Encoding.UTF8))
 			{
@@ -115,12 +128,25 @@ public class RegisterDevice
 	}
 
 	[Function("RegisterDevicePackaging")]
-	public async Task<IActionResult> RegisterDevicePackaging([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post"
+	public async Task<IActionResult> RegisterDevicePackaging([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options"
 		, Route = "registerdevicepackaging")] HttpRequest req)
 	{
 		try
 		{
 			_logger.LogInformation("C# HTTP trigger function processed a request.");
+
+			// Aggiungi header CORS su tutte le risposte
+			var resp = req.HttpContext.Response;
+			resp.Headers["Access-Control-Allow-Origin"] = "*";
+			resp.Headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
+			resp.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+
+			// Rispondi subito alla preflight
+			if (req.Method == "OPTIONS")
+			{
+				return new OkResult();
+			}
+
 			string body;
 			using (var reader = new StreamReader(req.Body, Encoding.UTF8))
 			{
@@ -142,7 +168,7 @@ public class RegisterDevice
 				return new BadRequestObjectResult("Serial Number, IoT Hub Host Name, or Connection String is missing.");
 			}
 
-			var rm = RegistryManager.CreateFromConnectionString(connectionString); 
+			var rm = RegistryManager.CreateFromConnectionString(connectionString);
 			var device = await rm.GetDeviceAsync(payload.SerialNumber);
 			if (device == null)
 			{
