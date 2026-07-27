@@ -159,14 +159,14 @@ public class RegisterDevice
 				return new OkObjectResult(new
 				{
 					iotHubHostName,
-					deviceId = config.SerialNumber,
+					deviceId = payload.SerialNumber,
 					otp
 				});
 			}
 			else
 			{
-				_logger.LogError($"Failed to register device: {config.SerialNumber}");
-				return new BadRequestObjectResult($"Failed to register device: {config.SerialNumber}");
+				_logger.LogError($"Failed to register device: {payload.SerialNumber}");
+				return new BadRequestObjectResult($"Failed to register device: {payload.SerialNumber}");
 			}
 		}
 		catch (Exception ex)
