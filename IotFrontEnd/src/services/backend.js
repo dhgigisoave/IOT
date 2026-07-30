@@ -1,4 +1,6 @@
 import { msalInstance, loginRequest } from '../auth/msalConfig';
+const urlBase = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api';
+//const urlBase = 'http://localhost:6280/api';
 
 
 export async function login() {
@@ -24,7 +26,7 @@ export async function login() {
 
 export async function getDataFromCosmosDb(start, end, accessToken) {
     //const auth = await login(); // consider storing token/session instead of calling login each time
-    const url = `https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/misure?start=${start.toISOString()}&end=${end.toISOString()}`;
+    const url = `${urlBase}/misure?start=${start.toISOString()}&end=${end.toISOString()}`;
 
     return fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` }
@@ -39,8 +41,7 @@ export async function getDevices(username, accessToken) {
     const key = `${username}|${accessToken}`;
     if (devicesInFlight.has(key)) return devicesInFlight.get(key);
 
-    //const url = `https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/devicesforuser`;
-    const url = `http://localhost:6280/api/devicesforuser`;
+    const url = `${urlBase}/devicesforuser`;
 
     const req = { userId: username };
 
@@ -63,7 +64,7 @@ export async function getDevices(username, accessToken) {
 }
 export async function claimDevice(user, accessToken, otp) {
     //const url = `https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/claimdevice?username=${username}`;
-    const url = 'http://localhost:6280/api/claimdevice';
+    const url = `${urlBase}/claimdevice`;
 
     const req = {
         OTP: otp,
