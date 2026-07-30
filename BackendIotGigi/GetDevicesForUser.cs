@@ -27,34 +27,38 @@ public class GetDevicesForUser
 	private const string TAG_USERID = "userId";
 	private const string TAG_OTP = "OTP";
 
-	public GetDevicesForUser(ILogger<GetDevicesForUser> logger, IConfiguration config)
+	private readonly RegistryManager _registryManager;
+
+	public GetDevicesForUser(ILogger<GetDevicesForUser> logger, IConfiguration config, RegistryManager registryManager)
 	{
 		_logger = logger;
 		_config = config;
+		_registryManager = registryManager;
 	}
 
 	[Function("GetDevicesForUser")]
-	public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "devicesforuser")] HttpRequest req)
+	public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "devicesforuser")] HttpRequest req)
 	{
 		_logger.LogInformation("C# HTTP trigger function processed a request.");
 
-		// Rispondi subito alla preflight
-		if (req.Method == "OPTIONS")
-		{
-			return new OkResult();
-		}
+		await AzureConnect.ValidateTokenAsync(req);
 
-		var (rm, devForUser, connectionString) = await AzureConnect
+		var (devForUser, connectionString) = await AzureConnect
 			.GetRegistryManagerAndRequestAsync<DeviceForUserReq, GetDevicesForUser>(req, _config, _logger);
 
-		if (rm is null || devForUser is null)
+		if (devForUser is null)
 		{
 			return new BadRequestObjectResult("Invalid payload");
 		}
 
-		var devFounds = rm.CreateQuery($"select * from devices where tags.{TAG_USERID} = '{devForUser.UserId}'")
-			.GetNextAsTwinAsync()
-			.Result;
+		var next = await _registryManager.CreateQuery($"select * from devices where tags.{TAG_USERID} = '{devForUser.UserId}'")
+			.GetNextAsTwinAsync();
+		if (next is null)
+		{ 
+			return new BadRequestObjectResult("No devices found for the user.");
+		}
+
+		var devFounds = next.ToList();
 
 		var temp = new List<HD35Device>();
 		foreach( var twin in devFounds)
@@ -79,10 +83,12 @@ public class GetDevicesForUser
 	}
 
 	[Function("ClaimDevice")]
-	public async Task<IActionResult> ClaimDevice([HttpTrigger(AuthorizationLevel.Function, "post", Route = "claimdevice")] HttpRequest req)
+	public async Task<IActionResult> ClaimDevice(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "claimdevice")] HttpRequest req)
 	{
 		try
 		{
+			await AzureConnect.ValidateTokenAsync(req);
 
 			_logger.LogInformation("C# HTTP trigger function processed a request.");
 			//var resp = AzureConnect.InitResponse(req);
@@ -93,13 +99,13 @@ public class GetDevicesForUser
 				return new OkResult();
 			}
 
-			var (rm, deviceClaim, connectionString) = await AzureConnect
+			var (deviceClaim, connectionString) = await AzureConnect
 				.GetRegistryManagerAndRequestAsync<DeviceClaimReq, GetDevicesForUser>(req, _config, _logger);
-			if (deviceClaim is null || rm is null)
+			if (deviceClaim is null)
 			{
 				return new BadRequestObjectResult("Invalid payload. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
 			}
-			var devFound = rm.CreateQuery($"select * from devices where tags.OTP = '{deviceClaim.OTP}'")
+			var devFound = _registryManager.CreateQuery($"select * from devices where tags.OTP = '{deviceClaim.OTP}'")
 				.GetNextAsTwinAsync()
 				.Result;
 			if (devFound is null || devFound.Count() == 0)
@@ -110,7 +116,7 @@ public class GetDevicesForUser
 			{
 				return new BadRequestObjectResult("Multiple devices found with the same OTP. Please contact support.");
 			}
-			await AssegnaDeviceAtUser(deviceClaim.userId, rm, devFound.First());
+			await AssegnaDeviceAtUser(deviceClaim.userId, _registryManager, devFound.First());
 			var response = new DeviceClaimResp(
 				new HD35Device(
 					id: devFound.First().DeviceId,

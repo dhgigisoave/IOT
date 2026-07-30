@@ -21,11 +21,13 @@ public class RegisterDevice
 {
 	private readonly ILogger<RegisterDevice> _logger;
 	private readonly IConfiguration _config;
+	private readonly RegistryManager _registryManager;
 
-	public RegisterDevice(ILogger<RegisterDevice> logger, IConfiguration config)
+	public RegisterDevice(ILogger<RegisterDevice> logger, IConfiguration config, RegistryManager registryManager)
 	{
 		_logger = logger;
 		_config = config;
+		_registryManager = registryManager;
 	}
 
 	[Function("RegisterDevice")]
@@ -48,10 +50,10 @@ public class RegisterDevice
 			}
 
 			var iotHubHostName = _config.GetValue<string>("IoTHubName") ?? string.Empty;
-			var (rm, config, connectionString) = Utility.AzureConnect
+			var (config, connectionString) = Utility.AzureConnect
 				.GetRegistryManagerAndRequestAsync<HD35ConfigPayload, RegisterDevice>(
 				req, _config, _logger).Result;
-			if (rm is null || config is null)
+			if (config is null)
 			{
 				_logger.LogError("RegistryManager or config is null.");
 				return new BadRequestObjectResult("RegistryManager or config is null.");
@@ -62,7 +64,7 @@ public class RegisterDevice
 			var thumbprint = cert.Thumbprint ?? string.Empty;
 
 			// Registra o aggiorna il device con X.509 thumbprint
-			var device = await rm.GetDeviceAsync(config.Id);
+			var device = await _registryManager.GetDeviceAsync(config.Id);
 			if (device == null)
 			{
 				device = new Device(config.Id)
@@ -73,7 +75,7 @@ public class RegisterDevice
 						X509Thumbprint = new X509Thumbprint { PrimaryThumbprint = thumbprint }
 					}
 				};
-				device = await rm.AddDeviceAsync(device);
+				device = await _registryManager.AddDeviceAsync(device);
 			}
 			else
 			{
@@ -82,7 +84,7 @@ public class RegisterDevice
 					Type = AuthenticationType.SelfSigned,
 					X509Thumbprint = new X509Thumbprint { PrimaryThumbprint = thumbprint }
 				};
-				device = await rm.UpdateDeviceAsync(device);
+				device = await _registryManager.UpdateDeviceAsync(device);
 			}
 
 			if (device == null)
@@ -92,7 +94,7 @@ public class RegisterDevice
 			}
 
 			// registra i sensori nel twin
-			await RegisterSensors(rm, config);
+			await RegisterSensors(_registryManager, config);
 
 			// Esporta il certificato PFX in base64 (il device lo userà per presentarsi)
 			var pfxBytes = cert.Export(X509ContentType.Pfx);
@@ -135,21 +137,21 @@ public class RegisterDevice
 			}
 
 			var iotHubHostName = _config.GetValue<string>("IoTHubName") ?? string.Empty;
-			var (rm, payload, connectionString) = Utility.AzureConnect
+			var (payload, connectionString) = Utility.AzureConnect
 				.GetRegistryManagerAndRequestAsync<PackagingPayload, RegisterDevice>(
 				req, _config, _logger).Result;
 			
-			if (rm is null || payload is null)
+			if (payload is null)
 			{
 				_logger.LogError("RegistryManager or payload is null.");
 				return new BadRequestObjectResult("RegistryManager or payload is null.");
 			}
 
-			var device = await rm.GetDeviceAsync(payload.SerialNumber);
+			var device = await _registryManager.GetDeviceAsync(payload.SerialNumber);
 			if (device == null)
 			{
 				device = new Device(payload.SerialNumber);
-				device = await rm.AddDeviceAsync(device);
+				device = await _registryManager.AddDeviceAsync(device);
 			}
 			else
 			{
@@ -157,7 +159,7 @@ public class RegisterDevice
 			}
 			if (device is not null)
 			{
-				var otp = await SetDevice(rm, payload);
+				var otp = await SetDevice(_registryManager, payload);
 				return new OkObjectResult(new
 				{
 					iotHubHostName,

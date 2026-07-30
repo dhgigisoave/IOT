@@ -33,7 +33,6 @@ function ClaimDevice({ user, accessToken, setClaimDevice }) {
 function Devices({ user }) {
     const [devices, setDevices] = useState([]);
     const [claimDevice, setClaimDevice] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         // Fetch devices for the user

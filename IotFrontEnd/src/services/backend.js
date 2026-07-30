@@ -1,6 +1,6 @@
 import { msalInstance, loginRequest } from '../auth/msalConfig';
-const urlBase = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api';
-//const urlBase = 'http://localhost:6280/api';
+//const urlBase = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api';
+const urlBase = 'http://localhost:6280/api';
 
 
 export async function login() {
@@ -63,7 +63,6 @@ export async function getDevices(username, accessToken) {
     return p;
 }
 export async function claimDevice(user, accessToken, otp) {
-    //const url = `https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/claimdevice?username=${username}`;
     const url = `${urlBase}/claimdevice`;
 
     const req = {

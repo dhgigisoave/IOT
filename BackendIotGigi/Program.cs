@@ -1,15 +1,31 @@
+using BackendIotGigi;
+using Microsoft.Azure.Devices;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Configuration; // <-- Controlla che ci sia questo
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
-	.ConfigureFunctionsWebApplication() // o .ConfigureFunctionsWorkerDefaults() se non usi HTTP
+	.ConfigureFunctionsWebApplication()
 	.ConfigureAppConfiguration(config =>
 	{
-		// Forza l'applicazione a leggere il file local.settings.json in locale
 		config.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
 		config.AddEnvironmentVariables();
 	})
+	.ConfigureServices((context, services) =>
+	{
+		services.AddSingleton(_ =>
+			RegistryManager.CreateFromConnectionString(
+				context.Configuration.GetValue<string>("IoTHubConnectionString2")));
+	})
 	.Build();
 
-host.Run();
+// Warmup connessione AMQP — ignora eccezioni (device inesistente va bene)
+try
+{
+	var rm = host.Services.GetRequiredService<RegistryManager>();
+	await rm.GetDeviceAsync("__warmup__");
+}
+catch { /* atteso: connessione aperta comunque */ }
+
+await host.RunAsync();
