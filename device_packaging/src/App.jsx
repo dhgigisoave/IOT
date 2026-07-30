@@ -4,10 +4,19 @@ import QRCode from 'react-qr-code'
 
 export default function App() {
     const [seriale, setSeriale] = useState("");
+    const [location, setLocation] = useState("");
+    const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
     const [claimToken, setClaimToken] = useState("");
 
     async function inviaSeriale() {
-        const response = await backend.setNewDevice(seriale);
+        const data = {
+            serial_number: seriale,
+            name: name,
+            description: description,
+            location: location
+		};
+        const response = await backend.setNewDevice(data);
         setClaimToken(response.otp);
     }
 
@@ -22,6 +31,33 @@ export default function App() {
                     type="text"
                     value={seriale}
                     onChange={e => setSeriale(e.target.value)}
+                    style={{ marginLeft: 8 }}
+                />
+            </label>
+            <label>
+                Inserire il nome:
+                <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    style={{ marginLeft: 8 }}
+                />
+            </label>
+            <label>
+                Inserire la descrizione:
+                <input
+                    type="text"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    style={{ marginLeft: 8 }}
+                />
+            </label>
+            <label>
+                Inserire la posizione:
+                <input
+                    type="text"
+                    value={location}
+                    onChange={e => setLocation(e.target.value)}
                     style={{ marginLeft: 8 }}
                 />
             </label>

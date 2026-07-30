@@ -7,7 +7,8 @@
   "type": "chrome",
   "request": "launch",
   "url": "http://localhost:31823",
-  "webRoot": "C:\\Progetti\\AzureProjects\\IotFrontEnd"
+  "webRoot": "C:\\Progetti\\AzureProjects\\IotFrontEnd",
+  "runtimeExecutable": "C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe"
 }</LaunchJsonTarget>
   </PropertyGroup>
 </Project>

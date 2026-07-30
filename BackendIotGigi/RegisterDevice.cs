@@ -47,28 +47,15 @@ public class RegisterDevice
 				return new OkResult();
 			}
 
-			string body;
-			using (var reader = new StreamReader(req.Body, Encoding.UTF8))
-			{
-				body = (await reader.ReadToEndAsync())?.Trim() ?? string.Empty;
-			}
-
-			if (string.IsNullOrEmpty(body))
-				return new BadRequestObjectResult("Body vuoto. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
-
-			var config = JsonSerializer.Deserialize<HD35ConfigPayload>(body);
-			if (config is null || string.IsNullOrEmpty(config.Id))
-				return new BadRequestObjectResult("Invalid payload. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
-
 			var iotHubHostName = _config.GetValue<string>("IoTHubName") ?? string.Empty;
-			var connectionString = _config.GetValue<string>("IoTHubConnectionString2") ?? string.Empty;
-			if (string.IsNullOrEmpty(config.Id) || string.IsNullOrEmpty(iotHubHostName) || string.IsNullOrEmpty(connectionString))
+			var (rm, config, connectionString) = Utility.AzureConnect
+				.GetRegistryManagerAndRequestAsync<HD35ConfigPayload, RegisterDevice>(
+				req, _config, _logger).Result;
+			if (rm is null || config is null)
 			{
-				_logger.LogError("Device ID, IoT Hub Host Name, or Connection String is missing.");
-				return new BadRequestObjectResult("Device ID, IoT Hub Host Name, or Connection String is missing.");
+				_logger.LogError("RegistryManager or config is null.");
+				return new BadRequestObjectResult("RegistryManager or config is null.");
 			}
-
-			var rm = RegistryManager.CreateFromConnectionString(connectionString);
 
 			// Genera certificato self-signed e ottieni thumbprint
 			using var cert = CreateSelfSignedCertificate(config.Id);
@@ -147,28 +134,17 @@ public class RegisterDevice
 				return new OkResult();
 			}
 
-			string body;
-			using (var reader = new StreamReader(req.Body, Encoding.UTF8))
-			{
-				body = (await reader.ReadToEndAsync())?.Trim() ?? string.Empty;
-			}
-
-			if (string.IsNullOrEmpty(body))
-				return new BadRequestObjectResult("Body vuoto. Invia deviceId (JSON { \"deviceId\": \"...\" } o solo testo).");
-
-			var payload = JsonSerializer.Deserialize<PackagingPayload>(body);
-			if (payload is null || string.IsNullOrEmpty(payload.SerialNumber))
-				return new BadRequestObjectResult("Invalid payload. Invia deviceId (JSON { \"serialnumber\": \"...\" } o solo testo).");
-
 			var iotHubHostName = _config.GetValue<string>("IoTHubName") ?? string.Empty;
-			var connectionString = _config.GetValue<string>("IoTHubConnectionString2") ?? string.Empty;
-			if (string.IsNullOrEmpty(payload.SerialNumber) || string.IsNullOrEmpty(iotHubHostName) || string.IsNullOrEmpty(connectionString))
+			var (rm, payload, connectionString) = Utility.AzureConnect
+				.GetRegistryManagerAndRequestAsync<PackagingPayload, RegisterDevice>(
+				req, _config, _logger).Result;
+			
+			if (rm is null || payload is null)
 			{
-				_logger.LogError("Serial Number, IoT Hub Host Name, or Connection String is missing.");
-				return new BadRequestObjectResult("Serial Number, IoT Hub Host Name, or Connection String is missing.");
+				_logger.LogError("RegistryManager or payload is null.");
+				return new BadRequestObjectResult("RegistryManager or payload is null.");
 			}
 
-			var rm = RegistryManager.CreateFromConnectionString(connectionString);
 			var device = await rm.GetDeviceAsync(payload.SerialNumber);
 			if (device == null)
 			{
@@ -181,7 +157,7 @@ public class RegisterDevice
 			}
 			if (device is not null)
 			{
-				var otp = await RegisterOTP(rm, payload.SerialNumber);
+				var otp = await SetDevice(rm, payload);
 				return new OkObjectResult(new
 				{
 					iotHubHostName,
@@ -208,8 +184,7 @@ public class RegisterDevice
 		var ret = new List<(string sensorId, string uniqueId)>();
 		if (twin is not null)
 		{
-			var reported = twin.Properties.Reported;
-			// creare/aggiornare la struttura sensors nel reported
+			twin.Tags["firmware_ver"] = config.FirmwareRelease;
 			var sensorsCollection = new TwinCollection();
 			foreach (var sensor in config.Params)
 			{
@@ -251,24 +226,28 @@ public class RegisterDevice
 		}
 		return ret;
 	}
-	public static async Task<string> RegisterOTP(RegistryManager rm, string serialNumber)
+	public static async Task<string> SetDevice(RegistryManager rm, PackagingPayload infos)
 	{
-		var twin = await rm.GetTwinAsync(serialNumber);
-		var ret = GeneraOTP(serialNumber);
+		var twin = await rm.GetTwinAsync(infos.SerialNumber);
+		var ret = GeneraOTP(infos.SerialNumber);
 		if (twin is not null)
 		{
 			twin.Tags["OTP"] = ret;
+			twin.Tags["location"] = infos.Location;
+			twin.Tags["name"] = infos.Name;
+			twin.Tags["description"] = infos.Description;
+			twin.Tags["createdAt"] = DateTime.UtcNow;
 
 			try
 			{
-				await rm.UpdateTwinAsync(serialNumber, twin, twin.ETag);
+				await rm.UpdateTwinAsync(infos.SerialNumber, twin, twin.ETag);
 			}
 			catch (Microsoft.Azure.Devices.Common.Exceptions.PreconditionFailedException)
 			{
 				// semplice retry: rileggi ed esegui di nuovo (o usa "*" per forzare)
-				twin = await rm.GetTwinAsync(serialNumber);
+				twin = await rm.GetTwinAsync(infos.SerialNumber);
 				twin.Tags["OTP"] = ret;
-				await rm.UpdateTwinAsync(serialNumber, twin, twin.ETag);
+				await rm.UpdateTwinAsync(infos.SerialNumber, twin, twin.ETag);
 			}
 		}
 		return ret;

@@ -109,3 +109,40 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+/* aggiungi in fondo */
+.devices-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: var(--bg);
+}
+
+    .devices-table th,
+    .devices-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .devices-table th {
+        background: var(--accent-bg);
+        color: var(--text-h);
+        font-weight: 600;
+    }
+
+    .devices-table tbody tr:nth-child(even) {
+        background: color-mix(in srgb, var(--accent-bg) 20%, transparent);
+    }
+
+    .devices-table tbody tr:hover {
+        background: color-mix(in srgb, var(--accent-bg) 35%, transparent);
+    }
+
+    .devices-table tbody tr:last-child td {
+        border-bottom: none;
+    }
