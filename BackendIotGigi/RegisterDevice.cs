@@ -19,7 +19,7 @@ namespace BackendIotGigi;
 
 public class RegisterDevice
 {
-	private readonly ILogger<RegisterDevice> _logger;
+	private readonly ILogger<RegisterDevice> _logger; 
 	private readonly IConfiguration _config;
 	private readonly RegistryManager _registryManager;
 
