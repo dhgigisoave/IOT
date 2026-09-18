@@ -51,8 +51,7 @@ jobs:
       - name: Stampa variabili per il debug
         run: |
             echo "::notice::Inizio tracciamento variabili"
-            echo "L'utente corrente è: ${{ github.actor }}"
-            echo "L'evento scatenante è: ${{ github.event_name }}"
+            echo "azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_SAND_0875BD10F }}"
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
