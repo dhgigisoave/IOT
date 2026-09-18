@@ -3,7 +3,7 @@ export async function setNewDevice(data) {
 	const url = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/registerdevicepackaging';
 	console.log('POST', url, 'seriale=', data.serial_number);
 
-
+	
 	try {
 		const res = await fetch(url, {
 			method: "POST",
