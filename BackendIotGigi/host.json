@@ -8,6 +8,14 @@
 			}
 		}
 	},
+	"extensions": {
+		"eventHubs": {
+			"clientRetryOptions": {
+				"tryTimeout": "00:01:00"
+			},
+			"transportType": "amqpWebSockets"
+		}
+	},
 	"versioning": {
 		"patch": "1.0.1_TestDeploy"
 	}
