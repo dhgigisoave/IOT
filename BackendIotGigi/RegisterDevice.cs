@@ -25,7 +25,7 @@ public class RegisterDevice
 
 	public RegisterDevice(ILogger<RegisterDevice> logger, IConfiguration config, RegistryManager registryManager)
 	{
-		_logger = logger;
+		_logger = logger; 
 		_config = config;
 		_registryManager = registryManager;
 	}
