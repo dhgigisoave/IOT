@@ -9,7 +9,7 @@ export default function App() {
     const [description, setDescription] = useState("");
     const [claimToken, setClaimToken] = useState("");
 
-    async function inviaSeriale() {
+    async function inviaSeriale() { 
         const data = {
             serial_number: seriale,
             name: name,
