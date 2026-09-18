@@ -32,7 +32,7 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
-      - name: Build And Deploi
+      - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with: 
@@ -48,10 +48,16 @@ jobs:
   check-variables:
       runs-on: ubuntu-latest
       steps:
-      - name: Stampa variabili per il debug
+      - name: Verifica token Static Web Apps
+        env:
+          SWA_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_SAND_0875BD10F }}
         run: |
-            echo "::notice::Inizio tracciamento variabili"
-            echo "azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_SAND_0875BD10F }}"
+            if [ -n "$SWA_TOKEN" ]; then
+              echo "::notice::Il token Azure Static Web Apps è presente"
+            else
+              echo "::error::Il token Azure Static Web Apps è vuoto o non disponibile"
+              exit 1
+            fi
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
