@@ -48,6 +48,7 @@ namespace BackendIotGigi.Models
 	}
 
 	public record DeviceMetadata(
+		[property: JsonPropertyName("id")] string Id,
 		[property: JsonPropertyName("deviceId")] string? DeviceId,
 		[property: JsonPropertyName("Type")] string? Type = "device",
 		[property: JsonPropertyName("networkName")] string? NetworkName = null,

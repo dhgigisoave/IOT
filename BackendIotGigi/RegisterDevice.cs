@@ -182,18 +182,19 @@ public class RegisterDevice
 		}
 	}
 
-	private void SalvaDeviceSuDatabase(PackagingPayload payload)
+	private async Task SalvaDeviceSuDatabase(PackagingPayload payload)
 	{
 		try
 		{
 
 			CosmosClient cosmosClient = new CosmosClient(_config.GetValue<string>(Constants.CosmosDBConnectionString));
-			cosmosClient.GetDatabase(Constants.CosmosDbDatabaseName)
+			var ret = cosmosClient.GetDatabase(Constants.CosmosDbDatabaseName)
 				.GetContainer(Constants.CosmosDbContainerName)
-				.CreateItemAsync(new DeviceMetadata(payload.SerialNumber)
+				.CreateItemAsync(new DeviceMetadata(Guid.NewGuid().ToString(), payload.SerialNumber)
 				{
 					LastConfigTs = DateTime.UtcNow
-				});
+				}).ConfigureAwait(false);
+			await ret;
 		}
 		catch (Exception)
 		{

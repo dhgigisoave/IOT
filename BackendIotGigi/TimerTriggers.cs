@@ -19,9 +19,9 @@ public class TimerTriggers
     [Function("TimerTriggers")]
 	public void Run([TimerTrigger("0 */5 * * * *")] TimerInfo myTimer,
 		[CosmosDBInput(
-				databaseName: "senseca-pd",
-				containerName: "deviceReadings",
-				Connection = "CosmosDBConnection")]HD35Payload toDoItem)
+				databaseName: Constants.CosmosDbDatabaseName,
+				containerName: Constants.CosmosDbContainerName,
+				Connection = Constants.CosmosDBConnectionString)]IEnumerable<HD35Payload> toDoItem)
     {
 
 		_logger.LogInformation("C# Timer trigger function executed at: {executionTime}", DateTime.Now);
