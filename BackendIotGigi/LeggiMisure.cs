@@ -27,7 +27,8 @@ namespace BackendIotGigi
 			[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "misure")] HttpRequestData req)
 		{
 			var client = new CosmosClient(Environment.GetEnvironmentVariable("CosmosDBConnectionString"));
-			var service = new SnapshotService(client, "IoTDatabase", "HD35Container");
+			//var service = new SnapshotService(client, "IoTDatabase", "HD35Container");
+			var service = new SnapshotService(client, "senseca-do", "deviceReadings");
 
 			// valori di default
 			var start = DateTime.UtcNow.AddHours(-1);

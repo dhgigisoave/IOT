@@ -8,6 +8,7 @@ namespace BackendIotGigi.Models
 	public record SensorMetadata(
 		[property: JsonPropertyName("displayName")] string? DisplayName,
 		[property: JsonPropertyName("id")] string? Id,
+		[property: JsonPropertyName("deviceId")] string? DeviceId,
 		[property: JsonPropertyName("serialNumber")] string? SerialNumber,
 		[property: JsonPropertyName("id_channel")] string? IdChannel,
 		[property: JsonPropertyName("qual")] double? Qual,

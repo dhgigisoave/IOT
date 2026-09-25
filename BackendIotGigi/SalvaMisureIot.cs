@@ -32,6 +32,8 @@ namespace BackendIotGigi
 		}
 
 		[Function("SalvaMisureIot")]
+		//[CosmosDBOutput(databaseName: "IoTDatabase", containerName: "HD35Container", Connection = "CosmosDBConnectionString")]
+		//[CosmosDBOutput(databaseName: "senseca-do", containerName: "deviceReadings", Connection = "CosmosDBConnectionString")]
 		[CosmosDBOutput(databaseName: "IoTDatabase", containerName: "HD35Container", Connection = "CosmosDBConnectionString")]
 		public async Task<object?> Run(
 			[EventHubTrigger("%IoTHubName%", Connection = "IoTHubConnectionString", ConsumerGroup = "%ConsumerGroup%")]
@@ -88,7 +90,7 @@ namespace BackendIotGigi
 						&& !string.IsNullOrEmpty(deviceId))
 					{
 						if (fw_rel.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(fw_rel.GetString()))
-							await UpdateConfig(body, results, rm);
+							await UpdateConfig(body, results, rm, deviceId);
 						else
 							await AddData(body, results, rm, deviceId);
 					}
@@ -104,11 +106,13 @@ namespace BackendIotGigi
 			}
 		}
 
-		private async Task UpdateConfig(string message, List<object> results, RegistryManager rm)
+		private async Task UpdateConfig(string message, List<object> results, RegistryManager rm, string deviceId)
 		{
 			var data = JsonSerializer.Deserialize<HD35ConfigPayload>(message);
 			if (data is not null)
 			{
+				if (data.Id != deviceId)
+					throw new Exception("DeviceId non compatible");
 				var sensorIds = await RegisterDevice.RegisterSensors(rm, data);
 				foreach (var sensor in data.Params)
 				{
@@ -118,6 +122,7 @@ namespace BackendIotGigi
 						DisplayName: $"{sensor.Label}-{sensor.SubLabel}",
 						Unit: sensor.Unit,
 						Id: uniqueId,
+						DeviceId: deviceId,
 						SerialNumber: sensor.SerialNumber,
 						IdChannel: sensor.Id,
 						Qual: sensor.Qual,
