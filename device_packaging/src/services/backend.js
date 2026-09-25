@@ -1,8 +1,10 @@
-export async function setNewDevice(data) {
+export async function setNewDevice(data, localBackend) {
 	//const url = 'http://localhost:6280/api/registerdevicepackaging';
 	//const url = 'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/registerdevicepackaging';
 	//const url =   'https://gigi-backend-e3bff8d7cwc4cyh4.eastus-01.azurewebsites.net/api/registerdevicepackaging';
-	const url = 'https://dh-iot-functions-b3bygqf3asb6e0ek.eastus-01.azurewebsites.net/api/registerdevicepackaging';
+	const url = localBackend
+		? 'http://localhost:6280/api/registerdevicepackaging'
+		: 'https://dh-iot-functions-b3bygqf3asb6e0ek.eastus-01.azurewebsites.net/api/registerdevicepackaging';
 
 	console.log('POST', url, 'seriale=', data.serial_number);
 

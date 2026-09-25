@@ -8,6 +8,7 @@ export default function App() {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [claimToken, setClaimToken] = useState("");
+    const [localBackend, setLocalBackend] = useState(false);
 
     async function inviaSeriale() { 
         const data = {
@@ -16,13 +17,15 @@ export default function App() {
             description: description,
             location: location
 		};
-        const response = await backend.setNewDevice(data);
+        const response = await backend.setNewDevice(data, localBackend);
         setClaimToken(response.otp);
     }
 
     return (
         <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
             <h1>Production Packaging</h1>
+            <div>            
+            </div>
             <p>App per la gestione del confezionamento device (uso interno).</p>
 
             <label>
@@ -63,6 +66,9 @@ export default function App() {
             </label>
 
             <button onClick={inviaSeriale} style={{ marginLeft: 8 }}>invia</button>
+			<button onClick={() => setLocalBackend(!localBackend)} style={{ marginLeft: 8 }}>
+                {localBackend ? 'Usa Backend Remoto' : 'Usa Backend Locale'}
+            </button>
 
             <div style={{ marginTop: 16 }}>
                 <label style={{ display: 'block', fontWeight: 600 }}>ClaimToken:</label>

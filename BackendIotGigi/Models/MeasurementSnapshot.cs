@@ -46,4 +46,12 @@ namespace BackendIotGigi.Models
 		public MeasurementSnapshot() : this(Guid.NewGuid().ToString(), "measurementSnapshot", ""
 			, null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, new List<SensorMeasurement>(), null) { }
 	}
+
+	public record DeviceMetadata(
+		[property: JsonPropertyName("deviceId")] string? DeviceId,
+		[property: JsonPropertyName("Type")] string? Type = "device",
+		[property: JsonPropertyName("networkName")] string? NetworkName = null,
+		[property: JsonPropertyName("lastConfigTs")] DateTime? LastConfigTs = null,
+		[property: JsonPropertyName("lastDataTs")] DateTime? LastDataTs = null
+	);
 }

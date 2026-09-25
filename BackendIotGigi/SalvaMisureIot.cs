@@ -32,9 +32,8 @@ namespace BackendIotGigi
 		}
 
 		[Function("SalvaMisureIot")]
-		//[CosmosDBOutput(databaseName: "IoTDatabase", containerName: "HD35Container", Connection = "CosmosDBConnectionString")]
-		//[CosmosDBOutput(databaseName: "senseca-do", containerName: "deviceReadings", Connection = "CosmosDBConnectionString")]
-		[CosmosDBOutput(databaseName: "IoTDatabase", containerName: "HD35Container", Connection = "CosmosDBConnectionString")]
+		[CosmosDBOutput(databaseName: Constants.CosmosDbDatabaseName
+			, containerName: Constants.CosmosDbContainerName, Connection = "CosmosDBConnectionString")]
 		public async Task<object?> Run(
 			[EventHubTrigger("%IoTHubName%", Connection = "IoTHubConnectionString", ConsumerGroup = "%ConsumerGroup%")]
 			EventData[] events,

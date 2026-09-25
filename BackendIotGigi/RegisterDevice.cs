@@ -1,6 +1,7 @@
 using BackendIotGigi.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Core;
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Azure.Devices;
@@ -25,7 +26,7 @@ public class RegisterDevice
 
 	public RegisterDevice(ILogger<RegisterDevice> logger, IConfiguration config, RegistryManager registryManager)
 	{
-		_logger = logger; 
+		_logger = logger;
 		_config = config;
 		_registryManager = registryManager;
 	}
@@ -140,7 +141,7 @@ public class RegisterDevice
 			var (payload, connectionString) = Utility.AzureConnect
 				.GetRegistryManagerAndRequestAsync<PackagingPayload, RegisterDevice>(
 				req, _config, _logger).Result;
-			
+
 			if (payload is null)
 			{
 				_logger.LogError("RegistryManager or payload is null.");
@@ -160,6 +161,7 @@ public class RegisterDevice
 			if (device is not null)
 			{
 				var otp = await SetDevice(_registryManager, payload);
+				SalvaDeviceSuDatabase(payload);
 				return new OkObjectResult(new
 				{
 					iotHubHostName,
@@ -177,6 +179,26 @@ public class RegisterDevice
 		{
 			_logger.LogError(ex, "An error occurred while registering the device.");
 			return new ObjectResult("An error occurred while registering the device.") { StatusCode = 500 };
+		}
+	}
+
+	private void SalvaDeviceSuDatabase(PackagingPayload payload)
+	{
+		try
+		{
+
+			CosmosClient cosmosClient = new CosmosClient(_config.GetValue<string>(Constants.CosmosDBConnectionString));
+			cosmosClient.GetDatabase(Constants.CosmosDbDatabaseName)
+				.GetContainer(Constants.CosmosDbContainerName)
+				.CreateItemAsync(new DeviceMetadata(payload.SerialNumber)
+				{
+					LastConfigTs = DateTime.UtcNow
+				});
+		}
+		catch (Exception)
+		{
+
+			throw;
 		}
 	}
 
