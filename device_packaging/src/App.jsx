@@ -18,7 +18,7 @@ export default function App() {
             location: location
 		};
         const response = await backend.setNewDevice(data, localBackend);
-        setClaimToken(response.otp);
+        setClaimToken(response.otpClaim);
     }
 
     return (
